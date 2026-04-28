@@ -42,6 +42,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/staff/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/staff/**").hasRole("ADMIN")
 
+                        // Schedule — GET public, CUD yêu cầu ADMIN
+                        .requestMatchers(HttpMethod.GET, "/schedules/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/schedules/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/schedules/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/schedules/**").hasRole("ADMIN")
+
                         // Tất cả còn lại cần authenticated
                         .anyRequest().authenticated()
                 )

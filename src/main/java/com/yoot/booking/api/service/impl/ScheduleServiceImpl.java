@@ -54,6 +54,15 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Override
+    public ResultDTO<ScheduleResponseDTO> getById(Long id) {
+
+        Schedule schedule = scheduleRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule", id));
+
+        return ResultDTO.success(scheduleMapper.toDTO(schedule), "Lấy lịch làm việc thành công");
+    }
+
+    @Override
     @Transactional
     public ResultDTO<ScheduleResponseDTO> create(ScheduleCreateDTO dto) {
 

@@ -9,6 +9,8 @@ public interface ScheduleService {
 
     ResultListDTO<ScheduleResponseDTO> getAll(PagingRequestDTO request, Long staffId, LocalDate date);
 
+    ResultDTO<ScheduleResponseDTO> getById(Long id);
+
     ResultDTO<ScheduleResponseDTO> create(ScheduleCreateDTO dto);
 
     ResultDTO<ScheduleResponseDTO> update(Long id, ScheduleUpdateDTO dto);
