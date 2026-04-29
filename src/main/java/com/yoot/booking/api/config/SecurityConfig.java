@@ -43,20 +43,20 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/swagger/**",
-                                "/auth/**"
+                                "/api/auth/**"
                         ).permitAll()
 
-                        // Staff
-                        .requestMatchers(HttpMethod.GET, "/staff/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/staff/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/staff/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/staff/**").hasRole("ADMIN")
-
-                        // Schedule
-                        .requestMatchers(HttpMethod.GET, "/schedules/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/schedules/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/schedules/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/schedules/**").hasRole("ADMIN")
+//                        // Staff
+//                        .requestMatchers(HttpMethod.GET, "/staff/**").permitAll()
+//                        .requestMatchers(HttpMethod.POST, "/staff/**").hasRole("ADMIN")
+//                        .requestMatchers(HttpMethod.PUT, "/staff/**").hasRole("ADMIN")
+//                        .requestMatchers(HttpMethod.DELETE, "/staff/**").hasRole("ADMIN")
+//
+//                        // Schedule
+//                        .requestMatchers(HttpMethod.GET, "/schedules/**").permitAll()
+//                        .requestMatchers(HttpMethod.POST, "/schedules/**").hasRole("ADMIN")
+//                        .requestMatchers(HttpMethod.PUT, "/schedules/**").hasRole("ADMIN")
+//                        .requestMatchers(HttpMethod.DELETE, "/schedules/**").hasRole("ADMIN")
 
                         // các API khác
                         .anyRequest().authenticated()

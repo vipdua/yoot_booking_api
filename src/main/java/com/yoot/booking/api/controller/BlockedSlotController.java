@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/blocked-slots")
+@RequestMapping("/api/blocked-slots")
 @RequiredArgsConstructor
 public class BlockedSlotController {
 

@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 
 @RestController
-@RequestMapping("/slots")
+@RequestMapping("/api/slots")
 @RequiredArgsConstructor
 public class SlotController {
 
