@@ -50,7 +50,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         BookingService service = serviceRepository.findById(dto.serviceId())
                 .orElseThrow(() -> new ResourceNotFoundException("Service", dto.serviceId()));
 
-        // ✔ check schedule
+        // check schedule
         boolean validSchedule = scheduleRepository
                 .existsByStaffIdAndWorkDateAndStartTimeLessThanEqualAndEndTimeGreaterThanEqual(
                         dto.staffId(),
@@ -63,14 +63,12 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new IllegalArgumentException("Slot không thuộc lịch làm việc");
         }
 
-        // ✔ check overlap
         boolean overlap = appointmentRepository
                 .existsByStaffIdAndStatusInAndStartTimeLessThanAndEndTimeGreaterThan(
                         dto.staffId(),
                         List.of(
                                 AppointmentStatus.PENDING,
-                                AppointmentStatus.CONFIRMED,
-                                AppointmentStatus.PAID
+                                AppointmentStatus.CONFIRMED
                         ),
                         dto.endTime(),
                         dto.startTime()
@@ -88,6 +86,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .startTime(dto.startTime())
                 .endTime(dto.endTime())
                 .status(AppointmentStatus.PENDING)
+                .paymentStatus(PaymentStatus.UNPAID)
                 .user(user)
                 .build();
 
@@ -95,6 +94,62 @@ public class AppointmentServiceImpl implements AppointmentService {
                 mapper.toDTO(appointmentRepository.save(appointment)),
                 "Đặt lịch thành công"
         );
+    }
+
+    // CONFIRM (STAFF / ADMIN)
+    @Transactional
+    public ResultDTO<AppointmentResponseDTO> confirm(Long id) {
+
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Appointment", id));
+
+        if (appointment.getStatus() != AppointmentStatus.PENDING) {
+            throw new IllegalStateException("Chỉ có thể xác nhận lịch PENDING");
+        }
+
+        appointment.setStatus(AppointmentStatus.CONFIRMED);
+
+        return ResultDTO.success(mapper.toDTO(appointment), "Xác nhận lịch thành công");
+    }
+
+    // MARK PAID (STAFF xác nhận đã nhận tiền)
+    @Transactional
+    public ResultDTO<AppointmentResponseDTO> markPaid(Long id) {
+
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Appointment", id));
+
+        if (appointment.getStatus() != AppointmentStatus.CONFIRMED) {
+            throw new IllegalStateException("Phải xác nhận trước");
+        }
+
+        if (appointment.getPaymentStatus() == PaymentStatus.PAID) {
+            throw new IllegalStateException("Đã thanh toán rồi");
+        }
+
+        appointment.setPaymentStatus(PaymentStatus.PAID);
+
+        return ResultDTO.success(mapper.toDTO(appointment), "Đã xác nhận thanh toán");
+    }
+
+    // COMPLETE (kết thúc dịch vụ)
+    @Transactional
+    public ResultDTO<AppointmentResponseDTO> complete(Long id) {
+
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Appointment", id));
+
+        if (appointment.getStatus() != AppointmentStatus.CONFIRMED) {
+            throw new IllegalStateException("Chưa xác nhận lịch");
+        }
+
+        if (appointment.getPaymentStatus() != PaymentStatus.PAID) {
+            throw new IllegalStateException("Chưa thanh toán");
+        }
+
+        appointment.setStatus(AppointmentStatus.COMPLETED);
+
+        return ResultDTO.success(mapper.toDTO(appointment), "Hoàn thành dịch vụ");
     }
 
     // ================= GET MY =================
@@ -144,7 +199,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         User user = getCurrentUser();
 
-        // 🔥 check quyền
+        // check quyền
         if (!appointment.getUser().getId().equals(user.getId())) {
             throw new IllegalStateException("Bạn không có quyền hủy lịch này");
         }
@@ -169,6 +224,11 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new IllegalStateException("Bạn không có quyền đổi lịch này");
         }
 
+        // check rule
+        if (appointment.getStatus() != AppointmentStatus.PENDING) {
+            throw new IllegalStateException("Chỉ được đổi lịch khi chưa xác nhận");
+        }
+
         // check schedule
         boolean validSchedule = scheduleRepository
                 .existsByStaffIdAndWorkDateAndStartTimeLessThanEqualAndEndTimeGreaterThanEqual(
@@ -182,14 +242,12 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new IllegalArgumentException("Slot không thuộc lịch làm việc");
         }
 
-        // check overlap
         boolean overlap = appointmentRepository
                 .existsByStaffIdAndStatusInAndStartTimeLessThanAndEndTimeGreaterThan(
                         appointment.getStaff().getId(),
                         List.of(
                                 AppointmentStatus.PENDING,
-                                AppointmentStatus.CONFIRMED,
-                                AppointmentStatus.PAID
+                                AppointmentStatus.CONFIRMED
                         ),
                         dto.endTime(),
                         dto.startTime()

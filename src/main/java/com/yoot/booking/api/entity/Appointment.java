@@ -39,7 +39,13 @@ public class Appointment {
     @Column(name = "end_time", nullable = false)
     private LocalDateTime endTime;
 
+    // trạng thái lịch
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AppointmentStatus status;
+
+    // trạng thái thanh toán
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", nullable = false)
+    private PaymentStatus paymentStatus;
 }

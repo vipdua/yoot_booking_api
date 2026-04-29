@@ -7,6 +7,12 @@ public interface AppointmentService {
 
     ResultDTO<AppointmentResponseDTO> create(AppointmentCreateDTO dto);
 
+    ResultDTO<AppointmentResponseDTO> confirm(Long id);
+
+    ResultDTO<AppointmentResponseDTO> markPaid(Long id);
+
+    ResultDTO<AppointmentResponseDTO> complete(Long id);
+
     ResultListDTO<AppointmentResponseDTO> getMyAppointments(PagingRequestDTO request);
 
     ResultListDTO<AppointmentResponseDTO> getAll(PagingRequestDTO request);

@@ -13,6 +13,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.*;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.*;
+
+import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
@@ -27,7 +30,14 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
 
+                // enable CORS
+                .cors(cors -> {})
+
                 .authorizeHttpRequests(auth -> auth
+
+                        // cho phép preflight request
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
                         // Swagger & Auth — public
                         .requestMatchers(
                                 "/swagger-ui/**",
@@ -36,19 +46,19 @@ public class SecurityConfig {
                                 "/auth/**"
                         ).permitAll()
 
-                        // Staff — GET public, CUD yêu cầu ADMIN
+                        // Staff
                         .requestMatchers(HttpMethod.GET, "/staff/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/staff/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/staff/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/staff/**").hasRole("ADMIN")
 
-                        // Schedule — GET public, CUD yêu cầu ADMIN
+                        // Schedule
                         .requestMatchers(HttpMethod.GET, "/schedules/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/schedules/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/schedules/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/schedules/**").hasRole("ADMIN")
 
-                        // Tất cả còn lại cần authenticated
+                        // các API khác
                         .anyRequest().authenticated()
                 )
 
@@ -56,24 +66,29 @@ public class SecurityConfig {
                         sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // Xử lý lỗi 401 / 403 → trả về JSON ResultDTO
+                // handle lỗi auth
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setContentType("application/json;charset=UTF-8");
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.getWriter().write(
-                                    objectMapper.writeValueAsString(ResultDTO.fail("Chưa xác thực. Vui lòng đăng nhập."))
+                                    objectMapper.writeValueAsString(
+                                            ResultDTO.fail("Chưa xác thực. Vui lòng đăng nhập.")
+                                    )
                             );
                         })
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
                             response.setContentType("application/json;charset=UTF-8");
                             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                             response.getWriter().write(
-                                    objectMapper.writeValueAsString(ResultDTO.fail("Bạn không có quyền thực hiện thao tác này."))
+                                    objectMapper.writeValueAsString(
+                                            ResultDTO.fail("Bạn không có quyền thực hiện thao tác này.")
+                                    )
                             );
                         })
                 )
 
+                // JWT filter
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
 
                 .formLogin(form -> form.disable());
@@ -81,8 +96,40 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // ================= CORS CONFIG =================
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+
+        CorsConfiguration config = new CorsConfiguration();
+
+        config.setAllowedOrigins(List.of("*"));
+
+        config.setAllowedMethods(List.of(
+                "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
+        ));
+
+        config.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "Accept"
+        ));
+
+        // để frontend đọc được header
+        config.setExposedHeaders(List.of("Authorization"));
+
+        config.setAllowCredentials(false);
+
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration("/**", config);
+
+        return source;
+    }
+
+    // ================= PASSWORD =================
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-}
+}

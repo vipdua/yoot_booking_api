@@ -1,5 +1,8 @@
 package com.yoot.booking.api.dto.appointment;
 
+import com.yoot.booking.api.entity.AppointmentStatus;
+import com.yoot.booking.api.entity.PaymentStatus;
+
 import java.time.LocalDateTime;
 
 public record AppointmentResponseDTO(
@@ -15,5 +18,7 @@ public record AppointmentResponseDTO(
         LocalDateTime startTime,
         LocalDateTime endTime,
 
-        String status
+        AppointmentStatus status,
+        PaymentStatus paymentStatus
+
 ) {}
