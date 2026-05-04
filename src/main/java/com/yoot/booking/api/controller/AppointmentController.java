@@ -3,10 +3,13 @@ package com.yoot.booking.api.controller;
 import com.yoot.booking.api.dto.Common.*;
 import com.yoot.booking.api.dto.appointment.*;
 import com.yoot.booking.api.service.AppointmentService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/appointments")
@@ -37,6 +40,23 @@ public class AppointmentController {
     @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
     public ResultDTO<AppointmentResponseDTO> complete(@PathVariable Long id) {
         return service.complete(id);
+    }
+
+    // ================= CREATE PAYMENT =================
+    @PostMapping("/{id}/pay")
+    public ResultDTO<VnPayPaymentResponseDTO> pay(
+            @PathVariable Long id,
+            HttpServletRequest request
+    ) {
+        String ip = request.getRemoteAddr();
+
+        return service.createPayment(id, ip);
+    }
+
+    // ================= CALLBACK =================
+    @GetMapping("/payment/vnpay-return")
+    public String vnpayReturn(@RequestParam Map<String, String> params) {
+        return service.handleVnPayCallback(params);
     }
 
     @GetMapping("/me")

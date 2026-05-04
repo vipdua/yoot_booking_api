@@ -7,5 +7,8 @@ public record BookingServiceResponseDTO(
     String name,
     Integer duration,
     BigDecimal price,
-    Boolean isActive
+    Boolean isActive,
+
+    Long categoryId,
+    String categoryName
 ) {}

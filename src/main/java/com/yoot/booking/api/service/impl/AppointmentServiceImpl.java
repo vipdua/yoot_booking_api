@@ -8,6 +8,8 @@ import com.yoot.booking.api.mapper.AppointmentMapper;
 import com.yoot.booking.api.mapper.PaginationMapper;
 import com.yoot.booking.api.repository.*;
 import com.yoot.booking.api.service.AppointmentService;
+import com.yoot.booking.api.service.EmailService;
+import com.yoot.booking.api.service.VnPayService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +30,8 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final AppointmentMapper mapper;
     private final PaginationMapper paginationMapper;
     private final UserRepository userRepository;
+    private final EmailService emailService;
+    private final VnPayService vnPayService;
 
     // ================= GET CURRENT USER =================
     private User getCurrentUser() {
@@ -109,6 +114,10 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         appointment.setStatus(AppointmentStatus.CONFIRMED);
 
+        appointmentRepository.save(appointment);
+
+        emailService.sendAppointmentConfirmedEmail(appointment);
+
         return ResultDTO.success(mapper.toDTO(appointment), "Xác nhận lịch thành công");
     }
 
@@ -128,6 +137,13 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
 
         appointment.setPaymentStatus(PaymentStatus.PAID);
+
+        try {
+            emailService.sendAppointmentPaidEmail(appointment);
+        } catch (Exception e) {
+            // chỉ log, không làm fail business
+            System.err.println("Send mail failed: " + e.getMessage());
+        }
 
         return ResultDTO.success(mapper.toDTO(appointment), "Đã xác nhận thanh toán");
     }
@@ -150,6 +166,72 @@ public class AppointmentServiceImpl implements AppointmentService {
         appointment.setStatus(AppointmentStatus.COMPLETED);
 
         return ResultDTO.success(mapper.toDTO(appointment), "Hoàn thành dịch vụ");
+    }
+
+    @Transactional
+    public ResultDTO<VnPayPaymentResponseDTO> createPayment(Long id, String clientIp) {
+
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Appointment", id));
+
+        User user = getCurrentUser();
+
+        // 🔐 check owner
+        if (!appointment.getUser().getId().equals(user.getId())) {
+            throw new IllegalStateException("Bạn không có quyền thanh toán lịch này");
+        }
+
+        if (appointment.getPaymentStatus() != PaymentStatus.UNPAID) {
+            throw new IllegalStateException("Lịch đã thanh toán");
+        }
+
+        String paymentUrl = vnPayService.createPaymentUrl(
+                "APT_" + appointment.getId(),
+                appointment.getService().getPrice().longValue(),
+                "Thanh toan lich hen #" + appointment.getId(),
+                clientIp
+        );
+
+        return ResultDTO.success(
+                new VnPayPaymentResponseDTO(paymentUrl),
+                "Tạo link thanh toán thành công"
+        );
+    }
+
+    @Transactional
+    public String handleVnPayCallback(Map<String, String> params) {
+
+        boolean valid = vnPayService.verifyCallback(params);
+
+        if (!valid) {
+            return "Thanh toán thất bại (Sai chữ ký)";
+        }
+
+        String responseCode = params.get("vnp_ResponseCode");
+        String txnRef = params.get("vnp_TxnRef"); // APT_1
+
+        Long appointmentId = Long.parseLong(txnRef.replace("APT_", ""));
+
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Appointment", appointmentId));
+
+        if ("00".equals(responseCode)) {
+            // ✅ SUCCESS
+            appointment.setPaymentStatus(PaymentStatus.PAID);
+
+            try {
+                emailService.sendAppointmentPaidEmail(appointment);
+            } catch (Exception e) {
+                System.err.println("Send email failed");
+            }
+
+            return "Thanh toán thành công";
+        } else {
+            // ❌ FAIL
+            appointment.setPaymentStatus(PaymentStatus.FAILED);
+
+            return "Thanh toán thất bại: " + responseCode;
+        }
     }
 
     // ================= GET MY =================
@@ -178,6 +260,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     public ResultListDTO<AppointmentResponseDTO> getAll(PagingRequestDTO request) {
 
         var page = appointmentRepository.findAll(request.toPageable());
+
 
         var data = page.getContent()
                 .stream()

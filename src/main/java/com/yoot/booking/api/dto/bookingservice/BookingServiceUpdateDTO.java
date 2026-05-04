@@ -6,5 +6,6 @@ public record BookingServiceUpdateDTO(
     String name,
     Integer duration,
     BigDecimal price,
-    Boolean isActive
+    Boolean isActive,
+    Long categoryId
 ) {}

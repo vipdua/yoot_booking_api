@@ -3,16 +3,14 @@ package com.yoot.booking.api.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigDecimal;
-
 @Entity
-@Table(name = "services")
+@Table(name = "service_categories")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class BookingService {
+public class ServiceCategory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,17 +19,9 @@ public class BookingService {
     @Column(nullable = false, unique = true)
     private String name;
 
-    @Column(nullable = false)
-    private Integer duration; // phút
-
-    @Column(nullable = false)
-    private BigDecimal price;
+    private String description;
 
     @Builder.Default
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
-    private ServiceCategory category;
 }

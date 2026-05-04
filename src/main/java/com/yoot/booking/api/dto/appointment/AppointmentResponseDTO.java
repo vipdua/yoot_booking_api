@@ -9,9 +9,16 @@ public record AppointmentResponseDTO(
 
         Long id,
 
+        Long userId,
+        String userName,
+        String userEmail,
+        String userPhone,
+
+        // STAFF
         Long staffId,
         String staffName,
 
+        // SERVICE
         Long serviceId,
         String serviceName,
 

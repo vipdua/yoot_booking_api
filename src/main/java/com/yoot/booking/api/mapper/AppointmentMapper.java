@@ -7,6 +7,11 @@ import org.mapstruct.*;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface AppointmentMapper {
 
+    @Mapping(target = "userId", source = "user.id")
+    @Mapping(target = "userName", source = "user.fullName")
+    @Mapping(target = "userEmail", source = "user.email")
+    @Mapping(target = "userPhone", source = "user.phone")
+
     @Mapping(target = "staffId", source = "staff.id")
     @Mapping(target = "staffName", source = "staff.name")
 

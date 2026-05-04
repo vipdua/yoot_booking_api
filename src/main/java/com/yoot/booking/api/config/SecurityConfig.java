@@ -43,7 +43,8 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/swagger/**",
-                                "/api/auth/**"
+                                "/api/auth/**",
+                                "/api/appointments/payment/vnpay-return"
                         ).permitAll()
 
 //                        // Staff

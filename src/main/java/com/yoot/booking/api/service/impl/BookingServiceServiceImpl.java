@@ -7,6 +7,7 @@ import com.yoot.booking.api.entity.BookingService;
 import com.yoot.booking.api.mapper.BookingServiceMapper;
 import com.yoot.booking.api.mapper.PaginationMapper;
 import com.yoot.booking.api.repository.BookingServiceRepository;
+import com.yoot.booking.api.repository.ServiceCategoryRepository;
 import com.yoot.booking.api.service.BookingServiceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ public class BookingServiceServiceImpl implements BookingServiceService {
     private final BookingServiceRepository repository;
     private final BookingServiceMapper mapper;
     private final PaginationMapper paginationMapper;
+    private final ServiceCategoryRepository categoryRepository;
 
     @Override
     public ResultListDTO<BookingServiceResponseDTO> getAll(PagingRequestDTO request) {
@@ -48,7 +50,11 @@ public class BookingServiceServiceImpl implements BookingServiceService {
     @Override
     public ResultDTO<BookingServiceResponseDTO> create(BookingServiceCreateDTO request) {
 
+        var category = categoryRepository.findById(request.categoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Category", request.categoryId()));
+
         BookingService entity = mapper.toEntity(request);
+        entity.setCategory(category);
 
         var saved = repository.save(entity);
 
@@ -62,6 +68,13 @@ public class BookingServiceServiceImpl implements BookingServiceService {
                 .orElseThrow(() -> new ResourceNotFoundException("Service", id));
 
         mapper.updateEntityFromDTO(request, entity);
+
+        if (request.categoryId() != null) {
+            var category = categoryRepository.findById(request.categoryId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Category", request.categoryId()));
+
+            entity.setCategory(category);
+        }
 
         var saved = repository.save(entity);
 

@@ -13,5 +13,8 @@ public record BookingServiceCreateDTO(
     Integer duration,
 
     @NotNull(message = "Price không được null")
-    BigDecimal price
+    BigDecimal price,
+
+    @NotNull(message = "CategoryId không được null")
+    Long categoryId
 ) {}
