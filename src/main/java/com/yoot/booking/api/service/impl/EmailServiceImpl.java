@@ -73,4 +73,17 @@ public class EmailServiceImpl implements EmailService {
             throw new RuntimeException("Send email failed: " + e.getMessage(), e);
         }
     }
+
+    @Override
+    public void sendOtpEmail(String to, String otp) {
+
+        Context context = new Context();
+        context.setVariable("otp", otp);
+
+        String html = templateEngine.process("email/otp-email", context);
+
+        String subject = "[Yoot] Mã OTP xác thực";
+
+        sendHtmlEmail(to, subject, html);
+    }
 }

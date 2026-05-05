@@ -6,4 +6,6 @@ public interface EmailService {
     void sendAppointmentPaidEmail(Appointment appointment);
 
     void sendAppointmentConfirmedEmail(Appointment appointment);
+
+    void sendOtpEmail(String to, String otp);
 }
