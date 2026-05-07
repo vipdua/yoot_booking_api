@@ -47,56 +47,136 @@ public class AppointmentServiceImpl implements AppointmentService {
     // ================= CREATE =================
     @Override
     @Transactional
-    public ResultDTO<AppointmentResponseDTO> create(AppointmentCreateDTO dto) {
+    public ResultDTO<AppointmentResponseDTO> create(
+            AppointmentCreateDTO dto
+    ) {
 
-        Staff staff = staffRepository.findByIdAndIsActiveTrue(dto.staffId())
-                .orElseThrow(() -> new ResourceNotFoundException("Staff", dto.staffId()));
-
-        BookingService service = serviceRepository.findById(dto.serviceId())
-                .orElseThrow(() -> new ResourceNotFoundException("Service", dto.serviceId()));
-
-        // check schedule
-        boolean validSchedule = scheduleRepository
-                .existsByStaffIdAndWorkDateAndStartTimeLessThanEqualAndEndTimeGreaterThanEqual(
-                        dto.staffId(),
-                        dto.startTime().toLocalDate(),
-                        dto.startTime().toLocalTime(),
-                        dto.endTime().toLocalTime()
+        Staff staff = staffRepository
+                .findByIdAndIsActiveTrue(dto.staffId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Staff",
+                                dto.staffId()
+                        )
                 );
 
-        if (!validSchedule) {
-            throw new IllegalArgumentException("Slot không thuộc lịch làm việc");
+        BookingService service = serviceRepository
+                .findById(dto.serviceId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Service",
+                                dto.serviceId()
+                        )
+                );
+
+        // ================= VALIDATE TIME =================
+        if (
+                dto.endTime()
+                        .isBefore(dto.startTime())
+        ) {
+
+            throw new IllegalArgumentException(
+                    "Thời gian kết thúc phải sau thời gian bắt đầu"
+            );
         }
 
-        boolean overlap = appointmentRepository
-                .existsByStaffIdAndStatusInAndStartTimeLessThanAndEndTimeGreaterThan(
-                        dto.staffId(),
-                        List.of(
-                                AppointmentStatus.PENDING,
-                                AppointmentStatus.CONFIRMED
-                        ),
-                        dto.endTime(),
-                        dto.startTime()
-                );
+        // ================= VALIDATE STAFF SERVICE =================
+        boolean supportsService =
+                staff.getServices()
+                        .stream()
+                        .anyMatch(s ->
+                                s.getId()
+                                        .equals(service.getId())
+                        );
+
+        if (!supportsService) {
+
+            throw new IllegalStateException(
+                    "Nhân viên không hỗ trợ dịch vụ này"
+            );
+        }
+
+        // ================= CHECK SCHEDULE =================
+        boolean validSchedule =
+                scheduleRepository
+                        .existsByStaffIdAndWorkDateAndStartTimeLessThanEqualAndEndTimeGreaterThanEqual(
+                                dto.staffId(),
+                                dto.startTime().toLocalDate(),
+                                dto.startTime().toLocalTime(),
+                                dto.endTime().toLocalTime()
+                        );
+
+        if (!validSchedule) {
+
+            throw new IllegalArgumentException(
+                    "Slot không thuộc lịch làm việc"
+            );
+        }
+
+        // ================= CHECK OVERLAP =================
+        boolean overlap =
+                appointmentRepository
+                        .existsByStaffIdAndStatusInAndStartTimeLessThanAndEndTimeGreaterThan(
+                                dto.staffId(),
+                                List.of(
+                                        AppointmentStatus.PENDING,
+                                        AppointmentStatus.CONFIRMED
+                                ),
+                                dto.endTime(),
+                                dto.startTime()
+                        );
 
         if (overlap) {
-            throw new IllegalStateException("Slot đã được đặt");
+
+            throw new IllegalStateException(
+                    "Slot đã được đặt"
+            );
         }
 
         User user = getCurrentUser();
 
-        Appointment appointment = Appointment.builder()
-                .staff(staff)
-                .service(service)
-                .startTime(dto.startTime())
-                .endTime(dto.endTime())
-                .status(AppointmentStatus.PENDING)
-                .paymentStatus(PaymentStatus.UNPAID)
-                .user(user)
-                .build();
+        // ================= CREATE APPOINTMENT =================
+        Appointment appointment =
+                Appointment.builder()
+
+                        // USER
+                        .user(user)
+
+                        // STAFF
+                        .staff(staff)
+
+                        // SERVICE
+                        .service(service)
+
+                        // CUSTOMER
+                        .customerName(dto.customerName())
+
+                        .customerPhone(dto.customerPhone())
+
+                        .customerEmail(dto.customerEmail())
+
+                        .note(dto.note())
+
+                        // PRICE
+                        .totalPrice(service.getPrice())
+
+                        // TIME
+                        .startTime(dto.startTime())
+
+                        .endTime(dto.endTime())
+
+                        // STATUS
+                        .status(AppointmentStatus.PENDING)
+
+                        .paymentStatus(PaymentStatus.UNPAID)
+
+                        .build();
+
+        var saved =
+                appointmentRepository.save(appointment);
 
         return ResultDTO.success(
-                mapper.toDTO(appointmentRepository.save(appointment)),
+                mapper.toDTO(saved),
                 "Đặt lịch thành công"
         );
     }
@@ -176,7 +256,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         User user = getCurrentUser();
 
-        // 🔐 check owner
+        // check owner
         if (!appointment.getUser().getId().equals(user.getId())) {
             throw new IllegalStateException("Bạn không có quyền thanh toán lịch này");
         }
@@ -187,7 +267,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         String paymentUrl = vnPayService.createPaymentUrl(
                 "APT_" + appointment.getId(),
-                appointment.getService().getPrice().longValue(),
+                appointment.getTotalPrice().longValue(),
                 "Thanh toan lich hen #" + appointment.getId(),
                 clientIp
         );
@@ -216,7 +296,6 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment", appointmentId));
 
         if ("00".equals(responseCode)) {
-            // ✅ SUCCESS
             appointment.setPaymentStatus(PaymentStatus.PAID);
 
             try {
@@ -227,7 +306,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
             return "Thanh toán thành công";
         } else {
-            // ❌ FAIL
+            // FAIL
             appointment.setPaymentStatus(PaymentStatus.FAILED);
 
             return "Thanh toán thất bại: " + responseCode;

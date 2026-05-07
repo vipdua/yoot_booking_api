@@ -47,6 +47,12 @@ public class SecurityConfig {
                                 "/api/appointments/payment/vnpay-return"
                         ).permitAll()
 
+                        .requestMatchers(HttpMethod.GET, "/api/banners/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/menus/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/services/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/staff/**").permitAll()
+
 //                        // Staff
 //                        .requestMatchers(HttpMethod.GET, "/staff/**").permitAll()
 //                        .requestMatchers(HttpMethod.POST, "/staff/**").hasRole("ADMIN")

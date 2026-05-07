@@ -24,16 +24,19 @@ public interface StaffRepository extends JpaRepository<Staff, Long> {
      * nào overlap với khoảng [start, end)
      */
     @Query("""
-            SELECT s FROM Staff s
-            WHERE s.isActive = true
-            AND s.id NOT IN (
-                SELECT a.staff.id FROM Appointment a
-                WHERE a.status IN ('CONFIRMED', 'PENDING')
-                AND a.startTime < :end
-                AND a.endTime > :start
-            )
-            """)
-    Page<Staff> findAvailableStaff(
+        SELECT DISTINCT s FROM Staff s
+        JOIN s.services sv
+        WHERE s.isActive = true
+        AND sv.id = :serviceId
+        AND s.id NOT IN (
+            SELECT a.staff.id FROM Appointment a
+            WHERE a.status IN ('CONFIRMED', 'PENDING')
+            AND a.startTime < :end
+            AND a.endTime > :start
+        )
+        """)
+    Page<Staff> findAvailableStaffByService(
+            @Param("serviceId") Long serviceId,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end,
             Pageable pageable

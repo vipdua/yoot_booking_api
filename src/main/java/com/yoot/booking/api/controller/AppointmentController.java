@@ -44,6 +44,7 @@ public class AppointmentController {
 
     // ================= CREATE PAYMENT =================
     @PostMapping("/{id}/pay")
+    @PreAuthorize("isAuthenticated()")
     public ResultDTO<VnPayPaymentResponseDTO> pay(
             @PathVariable Long id,
             HttpServletRequest request

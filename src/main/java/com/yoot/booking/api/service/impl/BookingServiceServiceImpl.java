@@ -4,12 +4,16 @@ import com.yoot.booking.api.common.exception.ResourceNotFoundException;
 import com.yoot.booking.api.dto.bookingservice.*;
 import com.yoot.booking.api.dto.Common.*;
 import com.yoot.booking.api.entity.BookingService;
+import com.yoot.booking.api.entity.MediaType;
 import com.yoot.booking.api.mapper.BookingServiceMapper;
 import com.yoot.booking.api.mapper.PaginationMapper;
 import com.yoot.booking.api.repository.BookingServiceRepository;
 import com.yoot.booking.api.repository.ServiceCategoryRepository;
 import com.yoot.booking.api.service.BookingServiceService;
+import com.yoot.booking.api.service.FileStorageService;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 @Service
@@ -20,7 +24,9 @@ public class BookingServiceServiceImpl implements BookingServiceService {
     private final BookingServiceMapper mapper;
     private final PaginationMapper paginationMapper;
     private final ServiceCategoryRepository categoryRepository;
+    private final FileStorageService fileStorageService;
 
+    // ================= GET ALL =================
     @Override
     public ResultListDTO<BookingServiceResponseDTO> getAll(PagingRequestDTO request) {
 
@@ -38,42 +44,102 @@ public class BookingServiceServiceImpl implements BookingServiceService {
         return ResultListDTO.success(data, "Lấy danh sách dịch vụ thành công", pagination);
     }
 
+    // ================= GET BY ID =================
     @Override
     public ResultDTO<BookingServiceResponseDTO> getById(Long id) {
 
         var entity = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Service", id));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Service", id));
 
         return ResultDTO.success(mapper.toDTO(entity), "Lấy dịch vụ thành công");
     }
 
+    // ================= CREATE =================
     @Override
     public ResultDTO<BookingServiceResponseDTO> create(BookingServiceCreateDTO request) {
 
-        var category = categoryRepository.findById(request.categoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Category", request.categoryId()));
+        var category = categoryRepository
+                .findById(request.categoryId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Category", request.categoryId()));
 
-        BookingService entity = mapper.toEntity(request);
-        entity.setCategory(category);
+        String imageUrl = null;
+
+        // upload image
+        if (request.imageFile() != null &&
+                !request.imageFile().isEmpty()) {
+
+            imageUrl = fileStorageService.upload(request.imageFile(), "service", MediaType.IMAGE);
+        }
+
+            BookingService entity = BookingService.builder()
+                .name(request.name())
+                .description(request.description())
+                .duration(request.duration())
+                .price(request.price())
+                .imageUrl(imageUrl)
+                .category(category)
+                .build();
 
         var saved = repository.save(entity);
 
         return ResultDTO.success(mapper.toDTO(saved), "Tạo dịch vụ thành công");
     }
 
+    // ================= UPDATE =================
     @Override
     public ResultDTO<BookingServiceResponseDTO> update(Long id, BookingServiceUpdateDTO request) {
 
         BookingService entity = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Service", id));
+                .orElseThrow(() ->
+                    new ResourceNotFoundException("Service", id));
 
-        mapper.updateEntityFromDTO(request, entity);
+        // update text field
+        if (request.name() != null) {
+            entity.setName(request.name());
+        }
 
+        if (request.description() != null) {
+            entity.setDescription(request.description());
+        }
+
+        if (request.duration() != null) {
+            entity.setDuration(request.duration());
+        }
+
+        if (request.price() != null) {
+            entity.setPrice(request.price());
+        }
+
+        if (request.isActive() != null) {
+            entity.setIsActive(request.isActive());
+        }
+
+        // update category
         if (request.categoryId() != null) {
-            var category = categoryRepository.findById(request.categoryId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Category", request.categoryId()));
+
+            var category = categoryRepository
+                    .findById(request.categoryId())
+                    .orElseThrow(() ->
+                            new ResourceNotFoundException("Category", request.categoryId()));
 
             entity.setCategory(category);
+        }
+
+        // replace image
+        if (request.imageFile() != null &&
+                !request.imageFile().isEmpty()) {
+
+            // delete old image
+            if (entity.getImageUrl() != null) {
+                fileStorageService.delete(entity.getImageUrl(), MediaType.IMAGE);
+            }
+
+            // upload new image
+            String imageUrl = fileStorageService.upload(request.imageFile(), "service", MediaType.IMAGE);
+
+            entity.setImageUrl(imageUrl);
         }
 
         var saved = repository.save(entity);
@@ -81,14 +147,20 @@ public class BookingServiceServiceImpl implements BookingServiceService {
         return ResultDTO.success(mapper.toDTO(saved), "Cập nhật dịch vụ thành công");
     }
 
+    // ================= DELETE =================
     @Override
     public ResultNoDataDTO delete(Long id) {
 
-        if (!repository.existsById(id)) {
-            throw new ResourceNotFoundException("Service", id);
+        BookingService entity = repository.findById(id)
+                .orElseThrow(() ->
+                    new ResourceNotFoundException("Service", id));
+
+        // delete cloudinary image
+        if (entity.getImageUrl() != null) {
+            fileStorageService.delete(entity.getImageUrl(), MediaType.IMAGE);
         }
 
-        repository.deleteById(id);
+        repository.delete(entity);
 
         return ResultNoDataDTO.success("Xóa dịch vụ thành công");
     }

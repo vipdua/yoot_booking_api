@@ -26,6 +26,11 @@ public class BookingApiApplication {
 		System.setProperty("EMAIL_USERNAME", dotenv.get("EMAIL_USERNAME"));
 		System.setProperty("EMAIL_PASSWORD", dotenv.get("EMAIL_PASSWORD"));
 
+		// Cloudinary
+		System.setProperty("CLOUDINARY_API_KEY", dotenv.get("CLOUDINARY_API_KEY"));
+		System.setProperty("CLOUDINARY_API_SECRET", dotenv.get("CLOUDINARY_API_SECRET"));
+		System.setProperty("CLOUDINARY_CLOUD_NAME", dotenv.get("CLOUDINARY_CLOUD_NAME"));
+
 		// VNPay
 		System.setProperty("VNPAY_URL", dotenv.get("VNPAY_URL"));
 		System.setProperty("VNPAY_API", dotenv.get("VNPAY_API"));
