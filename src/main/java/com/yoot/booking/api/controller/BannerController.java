@@ -27,24 +27,14 @@ public class BannerController {
     }
 
     // ================= CREATE =================
-    @PostMapping(
-            consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE
-    )
-    public ResultDTO<BannerResponseDTO> create(
-            @ModelAttribute @Valid BannerCreateDTO dto
-    ) {
+    @PostMapping(consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResultDTO<BannerResponseDTO> create(@ModelAttribute @Valid BannerCreateDTO dto) {
         return service.create(dto);
     }
 
     // ================= UPDATE =================
-    @PutMapping(
-            value = "/{id}",
-            consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE
-    )
-    public ResultDTO<BannerResponseDTO> update(
-            @PathVariable Long id,
-            @ModelAttribute BannerUpdateDTO dto
-    ) {
+    @PutMapping(value = "/{id}", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResultDTO<BannerResponseDTO> update(@PathVariable Long id, @ModelAttribute BannerUpdateDTO dto) {
         return service.update(id, dto);
     }
 

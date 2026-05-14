@@ -19,5 +19,8 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     );
 
     List<Appointment> findByUserId(Long userId);
+
     Page<Appointment> findAllByUserId(Long userId, Pageable pageable);
+
+    Page<Appointment> findAllByStaffId(Long staffId, Pageable pageable);
 }

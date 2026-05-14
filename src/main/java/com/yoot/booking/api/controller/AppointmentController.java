@@ -45,12 +45,8 @@ public class AppointmentController {
     // ================= CREATE PAYMENT =================
     @PostMapping("/{id}/pay")
     @PreAuthorize("isAuthenticated()")
-    public ResultDTO<VnPayPaymentResponseDTO> pay(
-            @PathVariable Long id,
-            HttpServletRequest request
-    ) {
+    public ResultDTO<VnPayPaymentResponseDTO> pay(@PathVariable Long id, HttpServletRequest request) {
         String ip = request.getRemoteAddr();
-
         return service.createPayment(id, ip);
     }
 
@@ -58,12 +54,6 @@ public class AppointmentController {
     @GetMapping("/payment/vnpay-return")
     public String vnpayReturn(@RequestParam Map<String, String> params) {
         return service.handleVnPayCallback(params);
-    }
-
-    @GetMapping("/me")
-    @PreAuthorize("isAuthenticated()")
-    public ResultListDTO<AppointmentResponseDTO> getMy(@ModelAttribute PagingRequestDTO request) {
-        return service.getMyAppointments(request);
     }
 
     @GetMapping
@@ -84,5 +74,19 @@ public class AppointmentController {
             @PathVariable Long id,
             @RequestBody @Valid AppointmentRescheduleDTO dto) {
         return service.reschedule(id, dto);
+    }
+
+    // ================= USER HISTORY =================
+    @GetMapping("/me/history")
+    @PreAuthorize("isAuthenticated()")
+    public ResultListDTO<AppointmentResponseDTO> getMyHistory(@ModelAttribute PagingRequestDTO request) {
+        return service.getMyAppointments(request);
+    }
+
+    // ================= STAFF SCHEDULE =================
+    @GetMapping("/staff/schedule")
+    @PreAuthorize("hasRole('STAFF')")
+    public ResultListDTO<AppointmentResponseDTO> getMyStaffAppointments(@ModelAttribute PagingRequestDTO request) {
+        return service.getStaffAppointments(request);
     }
 }

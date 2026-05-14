@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -28,24 +29,13 @@ public class StaffController {
 
     // ================= GET ALL =================
     @GetMapping
-    public ResultListDTO<StaffResponseDTO> getAll(
-
-            @ModelAttribute PagingRequestDTO request,
-
-            @RequestParam(required = false)
-            Long serviceId
-    ) {
-
-        return staffService.getAll(
-                request,
-                serviceId
-        );
+    public ResultListDTO<StaffResponseDTO> getAll(@ModelAttribute PagingRequestDTO request, @RequestParam(required = false) Long serviceId) {
+        return staffService.getAll(request, serviceId);
     }
 
     // ================= GET AVAILABLE =================
     @GetMapping("/available")
     public ResultListDTO<StaffResponseDTO> getAvailable(
-
             @RequestParam
             Long serviceId,
 
@@ -62,63 +52,36 @@ public class StaffController {
             LocalDateTime end,
 
             @ModelAttribute
-            PagingRequestDTO request
-    ) {
+            PagingRequestDTO request) {
 
-        return staffService.getAvailable(
-                serviceId,
-                start,
-                end,
-                request
-        );
+        return staffService.getAvailable(serviceId, start, end, request);
     }
 
     // ================= GET BY ID =================
     @GetMapping("/{id}")
-    public ResultDTO<StaffResponseDTO> getById(
-            @PathVariable Long id
-    ) {
-
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public ResultDTO<StaffResponseDTO> getById(@PathVariable Long id) {
         return staffService.getById(id);
     }
 
     // ================= CREATE =================
-    @PostMapping(
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
-    )
-    public ResultDTO<StaffResponseDTO> create(
-
-            @ModelAttribute
-            @Valid
-            StaffCreateDTO dto
-    ) {
-
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public ResultDTO<StaffResponseDTO> create(@ModelAttribute @Valid StaffCreateDTO dto) {
         return staffService.create(dto);
     }
 
     // ================= UPDATE =================
-    @PutMapping(
-            value = "/{id}",
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
-    )
-    public ResultDTO<StaffResponseDTO> update(
-
-            @PathVariable
-            Long id,
-
-            @ModelAttribute
-            StaffUpdateDTO dto
-    ) {
-
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public ResultDTO<StaffResponseDTO> update(@PathVariable Long id, @ModelAttribute StaffUpdateDTO dto) {
         return staffService.update(id, dto);
     }
 
     // ================= DELETE =================
     @DeleteMapping("/{id}")
-    public ResultNoDataDTO delete(
-            @PathVariable Long id
-    ) {
-
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public ResultNoDataDTO delete(@PathVariable Long id) {
         return staffService.delete(id);
     }
 }

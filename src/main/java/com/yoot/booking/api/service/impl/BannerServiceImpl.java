@@ -24,9 +24,7 @@ public class BannerServiceImpl implements BannerService {
 
     // ================= GET ACTIVE =================
     @Override
-    public ResultListDTO<BannerResponseDTO> getByPosition(
-            BannerPosition position
-    ) {
+    public ResultListDTO<BannerResponseDTO> getByPosition(BannerPosition position) {
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -40,18 +38,12 @@ public class BannerServiceImpl implements BannerService {
                 .map(mapper::toDTO)
                 .toList();
 
-        return ResultListDTO.success(
-                data,
-                "Lấy danh sách banner thành công",
-                null
-        );
+        return ResultListDTO.success(data, "Lấy danh sách banner thành công", null);
     }
 
     // ================= CREATE =================
     @Override
-    public ResultDTO<BannerResponseDTO> create(
-            BannerCreateDTO dto
-    ) {
+    public ResultDTO<BannerResponseDTO> create(BannerCreateDTO dto) {
 
         validateBannerMedia(dto.imageFile(), dto.videoFile());
 
@@ -59,25 +51,13 @@ public class BannerServiceImpl implements BannerService {
         String videoUrl = null;
 
         // upload image
-        if (dto.imageFile() != null &&
-                !dto.imageFile().isEmpty()) {
-
-            imageUrl = fileStorageService.upload(
-                    dto.imageFile(),
-                    "banner",
-                    MediaType.IMAGE
-            );
+        if (dto.imageFile() != null && !dto.imageFile().isEmpty()) {
+            imageUrl = fileStorageService.upload(dto.imageFile(), "banner", MediaType.IMAGE);
         }
 
         // upload video
-        if (dto.videoFile() != null &&
-                !dto.videoFile().isEmpty()) {
-
-            videoUrl = fileStorageService.upload(
-                    dto.videoFile(),
-                    "banner",
-                    MediaType.VIDEO
-            );
+        if (dto.videoFile() != null && !dto.videoFile().isEmpty()) {
+            videoUrl = fileStorageService.upload(dto.videoFile(), "banner", MediaType.VIDEO);
         }
 
         // auto order
@@ -104,18 +84,12 @@ public class BannerServiceImpl implements BannerService {
 
         var saved = repository.save(entity);
 
-        return ResultDTO.success(
-                mapper.toDTO(saved),
-                "Tạo banner thành công"
-        );
+        return ResultDTO.success(mapper.toDTO(saved), "Tạo banner thành công");
     }
 
     // ================= UPDATE =================
     @Override
-    public ResultDTO<BannerResponseDTO> update(
-            Long id,
-            BannerUpdateDTO dto
-    ) {
+    public ResultDTO<BannerResponseDTO> update(Long id, BannerUpdateDTO dto) {
 
         Banner entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -160,17 +134,10 @@ public class BannerServiceImpl implements BannerService {
 
             // delete old
             if (entity.getImageUrl() != null) {
-                fileStorageService.delete(
-                        entity.getImageUrl(),
-                        MediaType.IMAGE
-                );
+                fileStorageService.delete(entity.getImageUrl(), MediaType.IMAGE);
             }
 
-            String imageUrl = fileStorageService.upload(
-                    dto.imageFile(),
-                    "banner",
-                    MediaType.IMAGE
-            );
+            String imageUrl = fileStorageService.upload(dto.imageFile(), "banner", MediaType.IMAGE);
 
             entity.setImageUrl(imageUrl);
         }
@@ -181,27 +148,17 @@ public class BannerServiceImpl implements BannerService {
 
             // delete old
             if (entity.getVideoUrl() != null) {
-                fileStorageService.delete(
-                        entity.getVideoUrl(),
-                        MediaType.VIDEO
-                );
+                fileStorageService.delete(entity.getVideoUrl(), MediaType.VIDEO);
             }
 
-            String videoUrl = fileStorageService.upload(
-                    dto.videoFile(),
-                    "banner",
-                    MediaType.VIDEO
-            );
+            String videoUrl = fileStorageService.upload(dto.videoFile(), "banner", MediaType.VIDEO);
 
             entity.setVideoUrl(videoUrl);
         }
 
         var saved = repository.save(entity);
 
-        return ResultDTO.success(
-                mapper.toDTO(saved),
-                "Cập nhật banner thành công"
-        );
+        return ResultDTO.success(mapper.toDTO(saved), "Cập nhật banner thành công");
     }
 
     // ================= DELETE =================
@@ -209,50 +166,32 @@ public class BannerServiceImpl implements BannerService {
     public ResultNoDataDTO delete(Long id) {
 
         Banner entity = repository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("Banner không tồn tại"));
+                .orElseThrow(() -> new RuntimeException("Banner không tồn tại"));
 
         // delete cloudinary image
         if (entity.getImageUrl() != null) {
-
-            fileStorageService.delete(
-                    entity.getImageUrl(),
-                    MediaType.IMAGE
-            );
+            fileStorageService.delete(entity.getImageUrl(), MediaType.IMAGE);
         }
 
         // delete cloudinary video
         if (entity.getVideoUrl() != null) {
-
-            fileStorageService.delete(
-                    entity.getVideoUrl(),
-                    MediaType.VIDEO
-            );
+            fileStorageService.delete(entity.getVideoUrl(), MediaType.VIDEO);
         }
 
         repository.delete(entity);
 
-        return ResultNoDataDTO.success(
-                "Xóa banner thành công"
-        );
+        return ResultNoDataDTO.success("Xóa banner thành công");
     }
 
     // ================= VALIDATE =================
-    private void validateBannerMedia(
-            org.springframework.web.multipart.MultipartFile imageFile,
-            org.springframework.web.multipart.MultipartFile videoFile
-    ) {
+    private void validateBannerMedia(org.springframework.web.multipart.MultipartFile imageFile, org.springframework.web.multipart.MultipartFile videoFile) {
 
-        boolean noImage =
-                imageFile == null || imageFile.isEmpty();
+        boolean noImage = imageFile == null || imageFile.isEmpty();
 
-        boolean noVideo =
-                videoFile == null || videoFile.isEmpty();
+        boolean noVideo = videoFile == null || videoFile.isEmpty();
 
-        if (noImage && noVideo) {
-            throw new RuntimeException(
-                    "Banner phải có image hoặc video"
-            );
+        if (noImage && noVideo) {throw new RuntimeException("Banner phải có image hoặc video");
+
         }
     }
 }

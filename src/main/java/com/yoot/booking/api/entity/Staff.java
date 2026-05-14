@@ -37,6 +37,10 @@ public class Staff {
     @Column(name = "experience_years")
     private Integer experienceYears;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
     // ================= STATUS =================
     @Builder.Default
     @Column(name = "is_active", nullable = false)

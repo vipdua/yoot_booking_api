@@ -5,6 +5,7 @@ import com.yoot.booking.api.dto.category.*;
 import com.yoot.booking.api.service.ServiceCategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -28,18 +29,21 @@ public class ServiceCategoryController {
 
     // ================= CREATE =================
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResultDTO<ServiceCategoryResponseDTO> create(@RequestBody @Valid ServiceCategoryCreateDTO request) {
         return service.create(request);
     }
 
     // ================= UPDATE =================
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResultDTO<ServiceCategoryResponseDTO> update(@PathVariable Long id, @RequestBody ServiceCategoryUpdateDTO request) {
         return service.update(id, request);
     }
 
     // ================= DELETE =================
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResultNoDataDTO delete(@PathVariable Long id) {
         return service.delete(id);
     }

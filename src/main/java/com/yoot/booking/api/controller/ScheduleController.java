@@ -11,6 +11,7 @@ import com.yoot.booking.api.service.ScheduleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -36,18 +37,19 @@ public class ScheduleController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResultDTO<ScheduleResponseDTO> create(@RequestBody @Valid ScheduleCreateDTO dto) {
         return scheduleService.create(dto);
     }
 
     @PutMapping("/{id}")
-    public ResultDTO<ScheduleResponseDTO> update(
-            @PathVariable Long id,
-            @RequestBody ScheduleUpdateDTO dto) {
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public ResultDTO<ScheduleResponseDTO> update(@PathVariable Long id, @RequestBody ScheduleUpdateDTO dto) {
         return scheduleService.update(id, dto);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResultNoDataDTO delete(@PathVariable Long id) {
         return scheduleService.delete(id);
     }

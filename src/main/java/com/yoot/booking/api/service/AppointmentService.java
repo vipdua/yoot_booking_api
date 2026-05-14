@@ -26,4 +26,7 @@ public interface AppointmentService {
     ResultNoDataDTO cancel(Long id);
 
     ResultDTO<AppointmentResponseDTO> reschedule(Long id, AppointmentRescheduleDTO dto);
+
+    ResultListDTO<AppointmentResponseDTO> getStaffAppointments(PagingRequestDTO request);
+
 }

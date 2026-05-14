@@ -226,34 +226,23 @@ public class StaffServiceImpl implements StaffService {
     // ================= UPDATE =================
     @Override
     @Transactional
-    public ResultDTO<StaffResponseDTO> update(
-            Long id,
-            StaffUpdateDTO dto
-    ) {
+    public ResultDTO<StaffResponseDTO> update(Long id, StaffUpdateDTO dto) {
 
         Staff staff = staffRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Staff",
-                                id
-                        )
-                );
+                .orElseThrow(() -> new ResourceNotFoundException("Staff", id));
 
         // ================= UPDATE FIELD =================
         staffMapper.updateEntityFromDTO(dto, staff);
 
         // ================= UPDATE AVATAR =================
-        if (
-                dto.avatar() != null &&
-                        !dto.avatar().isEmpty()
-        ) {
+        if (dto.avatar() != null && !dto.avatar().isEmpty()) {
+            // xóa avatar cũ
+            if (staff.getAvatarUrl() != null && !staff.getAvatarUrl().isBlank()) {
+                fileStorageService.delete(staff.getAvatarUrl(), MediaType.IMAGE);
+            }
 
-            String avatarUrl =
-                    fileStorageService.upload(
-                            dto.avatar(),
-                            "staff",
-                            MediaType.IMAGE
-                    );
+            // upload avatar mới
+            String avatarUrl = fileStorageService.upload(dto.avatar(), "staff", MediaType.IMAGE);
 
             staff.setAvatarUrl(avatarUrl);
         }
@@ -262,19 +251,11 @@ public class StaffServiceImpl implements StaffService {
         if (dto.serviceIds() != null) {
 
             List<BookingService> services =
-                    bookingServiceRepository.findAllById(
-                            dto.serviceIds()
-                    );
+                    bookingServiceRepository.findAllById(dto.serviceIds());
 
             // validate
-            if (
-                    services.size() !=
-                            dto.serviceIds().size()
-            ) {
-
-                throw new ResourceNotFoundException(
-                        "Một hoặc nhiều service không tồn tại"
-                );
+            if (services.size() != dto.serviceIds().size()) {
+                throw new ResourceNotFoundException("Một hoặc nhiều service không tồn tại");
             }
 
             staff.setServices(services);
@@ -282,10 +263,7 @@ public class StaffServiceImpl implements StaffService {
 
         var saved = staffRepository.save(staff);
 
-        return ResultDTO.success(
-                staffMapper.toDTO(saved),
-                "Cập nhật nhân viên thành công"
-        );
+        return ResultDTO.success(staffMapper.toDTO(saved), "Cập nhật nhân viên thành công");
     }
 
     // ================= DELETE =================
@@ -294,27 +272,16 @@ public class StaffServiceImpl implements StaffService {
     public ResultNoDataDTO delete(Long id) {
 
         Staff staff = staffRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Staff",
-                                id
-                        )
-                );
+                .orElseThrow(() -> new ResourceNotFoundException("Staff", id));
 
         // soft delete
-        if (!staff.getIsActive()) {
-
-            throw new IllegalStateException(
-                    "Staff đã bị xóa trước đó"
-            );
+        if (!staff.getIsActive()) {throw new IllegalStateException("Staff đã bị xóa trước đó");
         }
 
         staff.setIsActive(false);
 
         staffRepository.save(staff);
 
-        return ResultNoDataDTO.success(
-                "Xóa nhân viên thành công"
-        );
+        return ResultNoDataDTO.success("Xóa nhân viên thành công");
     }
 }

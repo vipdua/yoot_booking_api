@@ -12,6 +12,7 @@ import com.yoot.booking.api.service.EmailService;
 import com.yoot.booking.api.service.VnPayService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -423,5 +424,24 @@ public class AppointmentServiceImpl implements AppointmentService {
         appointment.setEndTime(dto.endTime());
 
         return ResultDTO.success(mapper.toDTO(appointment), "Đổi lịch thành công");
+    }
+
+    @Override
+    public ResultListDTO<AppointmentResponseDTO> getStaffAppointments(PagingRequestDTO request) {
+        User currentUser = getCurrentUser();
+
+        Pageable pageable = request.toPageable();
+
+        Page<Appointment> page = appointmentRepository
+                        .findAllByStaffId(currentUser.getId(), pageable);
+
+        var data = page.getContent()
+                .stream()
+                .map(mapper::toDTO)
+                .toList();
+
+        var pagination = paginationMapper.toPagination(page);
+
+        return ResultListDTO.success(data, "Lấy lịch làm việc thành công", pagination);
     }
 }

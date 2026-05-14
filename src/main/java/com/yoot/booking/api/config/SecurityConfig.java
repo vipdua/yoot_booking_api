@@ -44,7 +44,9 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger/**",
                                 "/api/auth/**",
-                                "/api/appointments/payment/vnpay-return"
+                                "/api/appointments/payment/vnpay-return",
+                                "/ws-chat/**",
+                                "/ws-chat/info/**"
                         ).permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/api/banners/**").permitAll()
@@ -105,29 +107,23 @@ public class SecurityConfig {
 
     // ================= CORS CONFIG =================
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource
+    corsConfigurationSource() {
 
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(List.of("*"));
+        config.setAllowedOrigins(List.of("http://localhost:5173"));
 
-        config.setAllowedMethods(List.of(
-                "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
-        ));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
 
-        config.setAllowedHeaders(List.of(
-                "Authorization",
-                "Content-Type",
-                "Accept"
-        ));
+        config.setAllowedHeaders(List.of("*"));
 
-        // để frontend đọc được header
+        // frontend đọc header
         config.setExposedHeaders(List.of("Authorization"));
 
-        config.setAllowCredentials(false);
+        config.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
         source.registerCorsConfiguration("/**", config);
 

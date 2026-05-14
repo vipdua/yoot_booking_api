@@ -6,42 +6,33 @@ import lombok.*;
 import java.time.Instant;
 
 @Entity
-@Table(name = "users")
+@Table(name = "conversations")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User {
+public class Conversation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private String email;
+    // ================= CUSTOMER =================
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id")
+    private User customer;
 
-    @Column(nullable = false)
-    private String password;
+    // ================= SUPPORT STAFF =================
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "support_staff_id")
+    private User supportStaff;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Role role;
-
-    private String fullName;
-
-    @Column(columnDefinition = "TEXT")
-    private String description;
-
-    private String phone;
-
-    private String avatar;
-
-    private String address;
-
-    @Column(name = "is_active", nullable = false)
+    // ================= STATUS =================
+    @Column(name = "is_active")
     private Boolean isActive = true;
 
+    // ================= TIME =================
     @Column(name = "created_at")
     private Instant createdAt;
 
@@ -50,12 +41,15 @@ public class User {
 
     @PrePersist
     public void prePersist() {
+
         this.createdAt = Instant.now();
+
         this.updatedAt = Instant.now();
     }
 
     @PreUpdate
     public void preUpdate() {
+
         this.updatedAt = Instant.now();
     }
 }
