@@ -25,4 +25,8 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
     // Kiểm tra staff có lịch làm việc bao phủ khung giờ đặt không
     boolean existsByStaffIdAndWorkDateAndStartTimeLessThanEqualAndEndTimeGreaterThanEqual(
             Long staffId, LocalDate workDate, LocalTime startTime, LocalTime endTime);
+
+    boolean existsByStaffIdAndWorkDateAndStartTimeLessThanAndEndTimeGreaterThan( Long staffId, LocalDate workDate, LocalTime endTime, LocalTime startTime );
+
+    boolean existsByStaffIdAndWorkDateAndStartTimeLessThanAndEndTimeGreaterThanAndIdNot( Long staffId, LocalDate workDate, LocalTime endTime, LocalTime startTime, Long id );
 }

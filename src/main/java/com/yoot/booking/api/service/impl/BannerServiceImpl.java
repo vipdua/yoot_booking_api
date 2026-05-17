@@ -95,7 +95,50 @@ public class BannerServiceImpl implements BannerService {
                 .orElseThrow(() ->
                         new RuntimeException("Banner không tồn tại"));
 
-        // update basic field
+        // ================= VALIDATE DATE =================
+        LocalDateTime startDate =
+                dto.startDate() != null
+                        ? dto.startDate()
+                        : entity.getStartDate();
+
+        LocalDateTime endDate =
+                dto.endDate() != null
+                        ? dto.endDate()
+                        : entity.getEndDate();
+
+        if (startDate != null &&
+                endDate != null &&
+                startDate.isAfter(endDate)) {
+
+            throw new RuntimeException("Start date phải trước end date");
+        }
+
+        // ================= VALIDATE MEDIA =================
+        boolean hasOldMedia =
+                entity.getImageUrl() != null ||
+                        entity.getVideoUrl() != null;
+
+        boolean hasNewImage =
+                dto.imageFile() != null &&
+                        !dto.imageFile().isEmpty();
+
+        boolean hasNewVideo =
+                dto.videoFile() != null &&
+                        !dto.videoFile().isEmpty();
+
+        boolean hasNewMedia = hasNewImage || hasNewVideo;
+
+        // Không có media cũ + cũng không upload media mới
+        if (!hasOldMedia && !hasNewMedia) {
+            throw new RuntimeException("Banner phải có image hoặc video");
+        }
+
+        // Chỉ cho upload 1 loại media
+        if (hasNewImage && hasNewVideo) {
+            throw new RuntimeException("Chỉ được upload image hoặc video");
+        }
+
+        // ================= UPDATE BASIC FIELD =================
         if (dto.title() != null) {
             entity.setTitle(dto.title());
         }
@@ -128,11 +171,9 @@ public class BannerServiceImpl implements BannerService {
             entity.setEndDate(dto.endDate());
         }
 
-        // replace image
-        if (dto.imageFile() != null &&
-                !dto.imageFile().isEmpty()) {
+        // ================= REPLACE IMAGE =================
+        if (hasNewImage) {
 
-            // delete old
             if (entity.getImageUrl() != null) {
                 fileStorageService.delete(entity.getImageUrl(), MediaType.IMAGE);
             }
@@ -140,13 +181,14 @@ public class BannerServiceImpl implements BannerService {
             String imageUrl = fileStorageService.upload(dto.imageFile(), "banner", MediaType.IMAGE);
 
             entity.setImageUrl(imageUrl);
+
+            // Nếu upload image thì remove video
+            entity.setVideoUrl(null);
         }
 
-        // replace video
-        if (dto.videoFile() != null &&
-                !dto.videoFile().isEmpty()) {
+        // ================= REPLACE VIDEO =================
+        if (hasNewVideo) {
 
-            // delete old
             if (entity.getVideoUrl() != null) {
                 fileStorageService.delete(entity.getVideoUrl(), MediaType.VIDEO);
             }
@@ -154,6 +196,10 @@ public class BannerServiceImpl implements BannerService {
             String videoUrl = fileStorageService.upload(dto.videoFile(), "banner", MediaType.VIDEO);
 
             entity.setVideoUrl(videoUrl);
+
+            // OPTIONAL:
+            // Nếu upload video thì remove image
+            entity.setImageUrl(null);
         }
 
         var saved = repository.save(entity);

@@ -38,10 +38,7 @@ public class StaffServiceImpl implements StaffService {
 
     // ================= GET ALL =================
     @Override
-    public ResultListDTO<StaffResponseDTO> getAll(
-            PagingRequestDTO request,
-            Long serviceId
-    ) {
+    public ResultListDTO<StaffResponseDTO> getAll(PagingRequestDTO request, Long serviceId) {
 
         var pageable = request.toPageable();
 
@@ -49,21 +46,9 @@ public class StaffServiceImpl implements StaffService {
 
         // filter theo service
         if (serviceId != null) {
-
-            page = staffRepository
-                    .findByIsActiveAndServicesId(
-                            true,
-                            serviceId,
-                            pageable
-                    );
-
+            page = staffRepository.findByIsActiveAndServicesId(true, serviceId, pageable);
         } else {
-
-            page = staffRepository
-                    .findByIsActive(
-                            true,
-                            pageable
-                    );
+            page = staffRepository.findByIsActive(true, pageable);
         }
 
         var data = page.getContent()
@@ -71,14 +56,9 @@ public class StaffServiceImpl implements StaffService {
                 .map(staffMapper::toDTO)
                 .toList();
 
-        var pagination =
-                paginationMapper.toPagination(page);
+        var pagination = paginationMapper.toPagination(page);
 
-        return ResultListDTO.success(
-                data,
-                "Lấy danh sách nhân viên thành công",
-                pagination
-        );
+        return ResultListDTO.success(data, "Lấy danh sách nhân viên thành công", pagination);
     }
 
     // ================= GET BY ID =================
@@ -88,81 +68,48 @@ public class StaffServiceImpl implements StaffService {
         Staff staff = staffRepository
                 .findByIdAndIsActiveTrue(id)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Staff",
-                                id
-                        )
-                );
+                        new ResourceNotFoundException("Staff", id));
 
-        return ResultDTO.success(
-                staffMapper.toDTO(staff),
-                "Lấy thông tin nhân viên thành công"
-        );
+        return ResultDTO.success(staffMapper.toDTO(staff), "Lấy thông tin nhân viên thành công");
     }
 
     // ================= GET AVAILABLE =================
     @Override
-    public ResultListDTO<StaffResponseDTO> getAvailable(
-            Long serviceId,
-            LocalDateTime start,
-            LocalDateTime end,
-            PagingRequestDTO request
-    ) {
-
+    public ResultListDTO<StaffResponseDTO> getAvailable(Long serviceId, LocalDateTime start, LocalDateTime end, PagingRequestDTO request) {
         // validate
         if (serviceId == null) {
-
-            throw new IllegalArgumentException(
-                    "serviceId không được để trống"
-            );
+            throw new IllegalArgumentException("serviceId không được để trống");
         }
 
         if (start == null || end == null) {
-
-            throw new IllegalArgumentException(
-                    "start và end không được để trống"
-            );
+            throw new IllegalArgumentException("start và end không được để trống");
         }
 
         if (!end.isAfter(start)) {
-
-            throw new IllegalArgumentException(
-                    "end phải sau start"
-            );
+            throw new IllegalArgumentException("end phải sau start");
         }
 
         // check service tồn tại
         bookingServiceRepository.findById(serviceId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Service",
-                                serviceId
-                        )
-                );
+                .orElseThrow(() -> new ResourceNotFoundException("Service", serviceId));
 
         var pageable = request.toPageable();
 
-        Page<Staff> page =
-                staffRepository.findAvailableStaffByService(
+        Page<Staff> page = staffRepository.findAvailableStaffByService(
                         serviceId,
                         start,
                         end,
                         pageable
-                );
+        );
 
         var data = page.getContent()
                 .stream()
                 .map(staffMapper::toDTO)
                 .toList();
 
-        var pagination =
-                paginationMapper.toPagination(page);
+        var pagination = paginationMapper.toPagination(page);
 
-        return ResultListDTO.success(
-                data,
-                "Lấy danh sách nhân viên rảnh thành công",
-                pagination
-        );
+        return ResultListDTO.success(data, "Lấy danh sách nhân viên rảnh thành công", pagination);
     }
 
     // ================= CREATE =================
@@ -275,7 +222,8 @@ public class StaffServiceImpl implements StaffService {
                 .orElseThrow(() -> new ResourceNotFoundException("Staff", id));
 
         // soft delete
-        if (!staff.getIsActive()) {throw new IllegalStateException("Staff đã bị xóa trước đó");
+        if (!staff.getIsActive()) {
+            throw new IllegalStateException("Staff đã bị xóa trước đó");
         }
 
         staff.setIsActive(false);

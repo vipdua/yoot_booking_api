@@ -22,7 +22,6 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    @PreAuthorize("hasRole('USER')")
     public ResultDTO<AuthResponseDTO> login(@RequestBody UserLoginRequestDTO request) {
         return authService.login(request);
     }
@@ -34,32 +33,27 @@ public class AuthController {
 
     // ================= OTP - FORGOT PASSWORD =================
     @PostMapping("/forgot-password")
-    @PreAuthorize("hasRole('USER')")
     public ResultNoDataDTO forgotPassword(@RequestBody ForgotPasswordDTO request) {
         return authService.forgotPassword(request);
     }
 
     @PostMapping("/verify-otp")
-    @PreAuthorize("hasRole('USER')")
     public ResultNoDataDTO verifyOtp(@RequestBody VerifyOtpDTO request) {
         return authService.verifyOtp(request);
     }
 
     @PostMapping("/reset-password")
-    @PreAuthorize("hasRole('USER')")
     public ResultNoDataDTO resetPassword(@RequestBody ResetPasswordDTO request) {
         return authService.resetPassword(request);
     }
 
     // ================= ACTIVATE ACCOUNT =================
     @PostMapping("/send-activate-otp")
-    @PreAuthorize("hasRole('USER')")
     public ResultNoDataDTO sendActivateOtp(@RequestBody ForgotPasswordDTO request) {
         return authService.sendActivateOtp(request);
     }
 
     @PostMapping("/activate")
-    @PreAuthorize("hasRole('USER')")
     public ResultNoDataDTO activateAccount(@RequestBody VerifyOtpDTO request) {
         return authService.activateAccount(request);
     }

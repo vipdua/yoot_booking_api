@@ -41,4 +41,6 @@ public interface StaffRepository extends JpaRepository<Staff, Long> {
             @Param("end") LocalDateTime end,
             Pageable pageable
     );
+
+    Optional<Staff> findByUserId(Long userId);
 }

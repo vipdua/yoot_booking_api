@@ -13,4 +13,8 @@ public interface MenuRepository extends JpaRepository<Menu, Long> {
     List<Menu> findByParentIdAndType(Long parentId, MenuType type);
 
     boolean existsBySlugAndParentIdAndType(String slug, Long parentId, MenuType type);
+
+    boolean existsBySlugAndParentIdAndTypeAndIdNot( String slug, Long parentId, MenuType type, Long id );
+
+    boolean existsByParentId(Long parentId);
 }

@@ -7,6 +7,7 @@ import com.yoot.booking.api.entity.BookingService;
 import com.yoot.booking.api.entity.MediaType;
 import com.yoot.booking.api.mapper.BookingServiceMapper;
 import com.yoot.booking.api.mapper.PaginationMapper;
+import com.yoot.booking.api.repository.AppointmentRepository;
 import com.yoot.booking.api.repository.BookingServiceRepository;
 import com.yoot.booking.api.repository.ServiceCategoryRepository;
 import com.yoot.booking.api.service.BookingServiceService;
@@ -14,6 +15,7 @@ import com.yoot.booking.api.service.FileStorageService;
 
 import lombok.RequiredArgsConstructor;
 
+import com.yoot.booking.api.common.exception.BadRequestException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -24,6 +26,7 @@ public class BookingServiceServiceImpl implements BookingServiceService {
     private final BookingServiceMapper mapper;
     private final PaginationMapper paginationMapper;
     private final ServiceCategoryRepository categoryRepository;
+    private final AppointmentRepository appointmentRepository;
     private final FileStorageService fileStorageService;
 
     // ================= GET ALL =================
@@ -153,11 +156,25 @@ public class BookingServiceServiceImpl implements BookingServiceService {
 
         BookingService entity = repository.findById(id)
                 .orElseThrow(() ->
-                    new ResourceNotFoundException("Service", id));
+                        new ResourceNotFoundException(
+                                "Service",
+                                id
+                        ));
 
-        // delete cloudinary image
+        // check appointment using service
+        if (appointmentRepository.existsByServiceId(id)) {
+
+            throw new BadRequestException(
+                    "Service đang được sử dụng"
+            );
+        }
+
+        // delete image
         if (entity.getImageUrl() != null) {
-            fileStorageService.delete(entity.getImageUrl(), MediaType.IMAGE);
+            fileStorageService.delete(
+                    entity.getImageUrl(),
+                    MediaType.IMAGE
+            );
         }
 
         repository.delete(entity);

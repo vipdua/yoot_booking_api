@@ -91,12 +91,32 @@ public class MenuServiceImpl implements MenuService {
         Menu entity = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Menu không tồn tại"));
 
+        boolean exists = repository
+                .existsBySlugAndParentIdAndTypeAndIdNot(
+                        dto.slug(),
+                        dto.parentId(),
+                        dto.type(),
+                        id
+                );
+
+        if (exists) {
+            throw new RuntimeException("Slug đã tồn tại");
+        }
+
         mapper.updateEntity(dto, entity);
 
-        // update parent nếu có
         if (dto.parentId() != null) {
+
+            if (dto.parentId().equals(id)) {
+                throw new RuntimeException("Không thể set chính nó làm parent");
+            }
+
             Menu parent = repository.findById(dto.parentId())
                     .orElseThrow(() -> new RuntimeException("Parent không tồn tại"));
+
+            if (isCircularParent(parent, id)) {
+                throw new RuntimeException("Phát hiện vòng lặp menu");
+            }
 
             entity.setParent(parent);
         }
@@ -110,6 +130,10 @@ public class MenuServiceImpl implements MenuService {
 
         if (!repository.existsById(id)) {
             throw new RuntimeException("Menu không tồn tại");
+        }
+
+        if (repository.existsByParentId(id)) {
+            throw new RuntimeException("Menu đang có menu con");
         }
 
         repository.deleteById(id);
@@ -142,5 +166,19 @@ public class MenuServiceImpl implements MenuService {
         }
 
         return roots;
+    }
+
+    private boolean isCircularParent(Menu parent, Long currentId) {
+
+        while (parent != null) {
+
+            if (parent.getId().equals(currentId)) {
+                return true;
+            }
+
+            parent = parent.getParent();
+        }
+
+        return false;
     }
 }

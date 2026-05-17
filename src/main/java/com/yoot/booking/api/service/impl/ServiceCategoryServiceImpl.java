@@ -6,6 +6,8 @@ import com.yoot.booking.api.dto.Common.*;
 import com.yoot.booking.api.entity.ServiceCategory;
 import com.yoot.booking.api.mapper.PaginationMapper;
 import com.yoot.booking.api.mapper.ServiceCategoryMapper;
+import com.yoot.booking.api.repository.BookingServiceRepository;
+import com.yoot.booking.api.common.exception.BadRequestException;
 import com.yoot.booking.api.repository.ServiceCategoryRepository;
 import com.yoot.booking.api.service.ServiceCategoryService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ public class ServiceCategoryServiceImpl implements ServiceCategoryService {
     private final ServiceCategoryRepository repository;
     private final ServiceCategoryMapper mapper;
     private final PaginationMapper paginationMapper;
+    private final BookingServiceRepository bookingServiceRepository;
 
     // ================= GET ALL =================
     @Override
@@ -51,6 +54,11 @@ public class ServiceCategoryServiceImpl implements ServiceCategoryService {
     @Override
     public ResultDTO<ServiceCategoryResponseDTO> create(ServiceCategoryCreateDTO request) {
 
+        // check duplicate
+        if (repository.existsByNameIgnoreCase(request.name())) {
+            throw new RuntimeException("Category đã tồn tại");
+        }
+
         ServiceCategory entity = mapper.toEntity(request);
 
         var saved = repository.save(entity);
@@ -65,6 +73,11 @@ public class ServiceCategoryServiceImpl implements ServiceCategoryService {
         ServiceCategory entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", id));
 
+        // ================= CHECK DUPLICATE =================
+        if (repository.existsByNameIgnoreCaseAndIdNot(request.name(), id)) {
+            throw new RuntimeException("Category đã tồn tại");
+        }
+
         mapper.update(entity, request);
 
         var saved = repository.save(entity);
@@ -76,8 +89,14 @@ public class ServiceCategoryServiceImpl implements ServiceCategoryService {
     @Override
     public ResultNoDataDTO delete(Long id) {
 
+        // check tồn tại
         if (!repository.existsById(id)) {
             throw new ResourceNotFoundException("Category", id);
+        }
+
+        // check đang sử dụng
+        if (bookingServiceRepository.existsByCategoryId(id)) {
+            throw new BadRequestException("Category đang được sử dụng");
         }
 
         repository.deleteById(id);

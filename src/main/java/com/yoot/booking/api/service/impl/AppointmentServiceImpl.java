@@ -48,26 +48,18 @@ public class AppointmentServiceImpl implements AppointmentService {
     // ================= CREATE =================
     @Override
     @Transactional
-    public ResultDTO<AppointmentResponseDTO> create(
-            AppointmentCreateDTO dto
-    ) {
+    public ResultDTO<AppointmentResponseDTO> create(AppointmentCreateDTO dto) {
 
         Staff staff = staffRepository
                 .findByIdAndIsActiveTrue(dto.staffId())
                 .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Staff",
-                                dto.staffId()
-                        )
+                        new ResourceNotFoundException("Staff", dto.staffId())
                 );
 
         BookingService service = serviceRepository
                 .findById(dto.serviceId())
                 .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Service",
-                                dto.serviceId()
-                        )
+                        new ResourceNotFoundException("Service", dto.serviceId())
                 );
 
         // ================= VALIDATE TIME =================
@@ -75,10 +67,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 dto.endTime()
                         .isBefore(dto.startTime())
         ) {
-
-            throw new IllegalArgumentException(
-                    "Thời gian kết thúc phải sau thời gian bắt đầu"
-            );
+            throw new IllegalArgumentException("Thời gian kết thúc phải sau thời gian bắt đầu");
         }
 
         // ================= VALIDATE STAFF SERVICE =================
@@ -91,10 +80,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                         );
 
         if (!supportsService) {
-
-            throw new IllegalStateException(
-                    "Nhân viên không hỗ trợ dịch vụ này"
-            );
+            throw new IllegalStateException("Nhân viên không hỗ trợ dịch vụ này");
         }
 
         // ================= CHECK SCHEDULE =================
@@ -108,10 +94,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                         );
 
         if (!validSchedule) {
-
-            throw new IllegalArgumentException(
-                    "Slot không thuộc lịch làm việc"
-            );
+            throw new IllegalArgumentException("Slot không thuộc lịch làm việc");
         }
 
         // ================= CHECK OVERLAP =================
@@ -128,10 +111,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                         );
 
         if (overlap) {
-
-            throw new IllegalStateException(
-                    "Slot đã được đặt"
-            );
+            throw new IllegalStateException("Slot đã được đặt");
         }
 
         User user = getCurrentUser();
@@ -173,13 +153,9 @@ public class AppointmentServiceImpl implements AppointmentService {
 
                         .build();
 
-        var saved =
-                appointmentRepository.save(appointment);
+        var saved = appointmentRepository.save(appointment);
 
-        return ResultDTO.success(
-                mapper.toDTO(saved),
-                "Đặt lịch thành công"
-        );
+        return ResultDTO.success(mapper.toDTO(saved), "Đặt lịch thành công");
     }
 
     // CONFIRM (STAFF / ADMIN)
@@ -273,10 +249,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 clientIp
         );
 
-        return ResultDTO.success(
-                new VnPayPaymentResponseDTO(paymentUrl),
-                "Tạo link thanh toán thành công"
-        );
+        return ResultDTO.success(new VnPayPaymentResponseDTO(paymentUrl), "Tạo link thanh toán thành công");
     }
 
     @Transactional
@@ -428,12 +401,19 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public ResultListDTO<AppointmentResponseDTO> getStaffAppointments(PagingRequestDTO request) {
+
         User currentUser = getCurrentUser();
+
+        Staff staff = staffRepository
+                .findByUserId(currentUser.getId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Staff account not found")
+                );
 
         Pageable pageable = request.toPageable();
 
-        Page<Appointment> page = appointmentRepository
-                        .findAllByStaffId(currentUser.getId(), pageable);
+        Page<Appointment> page =
+                appointmentRepository.findAllByStaffId(staff.getId(), pageable);
 
         var data = page.getContent()
                 .stream()
