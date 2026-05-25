@@ -28,41 +28,15 @@ public class ChatSocketController {
 
     // ================= SEND MESSAGE =================
     @MessageMapping("/chat.send")
-    public void sendMessage(
-            SocketMessageDTO dto
-    ) {
+    public void sendMessage(SocketMessageDTO dto) {
 
-        String email =
-                jwtUtil.extractEmail(
-                        dto.token()
-                );
+        String email = jwtUtil.extractEmail(dto.token());
 
-        ResultDTO<MessageResponseDTO>
-                result =
+        ResultDTO<MessageResponseDTO> result = messageService.sendMessage(
+                        new MessageSendDTO(dto.conversationId(), dto.content(), dto.type()), email);
 
-                messageService.sendMessage(
+        MessageResponseDTO message = result.getData();
 
-                        new MessageSendDTO(
-
-                                dto.conversationId(),
-
-                                dto.content(),
-
-                                dto.type()
-                        ),
-
-                        email
-                );
-
-        MessageResponseDTO message =
-                result.getData();
-
-        messagingTemplate.convertAndSend(
-
-                "/topic/conversation/"
-                        + dto.conversationId(),
-
-                message
-        );
+        messagingTemplate.convertAndSend("/topic/conversation/" + dto.conversationId(), message);
     }
 }

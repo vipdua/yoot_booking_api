@@ -27,10 +27,11 @@ public class JwtUtil {
     }
 
     // ================= ACCESS TOKEN =================
-    public String generateToken(String email, String role) {
+    public String generateToken(Long userId, String email, String role) {
         return Jwts.builder()
                 .setSubject(email)
                 .claim("role", role)
+                .claim("id", userId)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + accessExpiration))
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)

@@ -9,6 +9,7 @@ import com.yoot.booking.api.mapper.PaginationMapper;
 import com.yoot.booking.api.repository.*;
 import com.yoot.booking.api.service.AppointmentService;
 import com.yoot.booking.api.service.EmailService;
+import com.yoot.booking.api.service.NotificationService;
 import com.yoot.booking.api.service.VnPayService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -17,6 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +35,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final VnPayService vnPayService;
+    private final NotificationService notificationService;
 
     // ================= GET CURRENT USER =================
     private User getCurrentUser() {
@@ -53,31 +56,28 @@ public class AppointmentServiceImpl implements AppointmentService {
         Staff staff = staffRepository
                 .findByIdAndIsActiveTrue(dto.staffId())
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Staff", dto.staffId())
-                );
+                        new ResourceNotFoundException("Staff", dto.staffId()));
 
         BookingService service = serviceRepository
                 .findById(dto.serviceId())
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Service", dto.serviceId())
-                );
+                        new ResourceNotFoundException("Service", dto.serviceId()));
+
+        // ================= VALIDATE PAST TIME =================
+        if (dto.startTime().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Không thể đặt lịch trong quá khứ");
+        }
 
         // ================= VALIDATE TIME =================
-        if (
-                dto.endTime()
-                        .isBefore(dto.startTime())
-        ) {
+        if (dto.endTime().isBefore(dto.startTime())) {
             throw new IllegalArgumentException("Thời gian kết thúc phải sau thời gian bắt đầu");
         }
 
         // ================= VALIDATE STAFF SERVICE =================
-        boolean supportsService =
-                staff.getServices()
+        boolean supportsService = staff.getServices()
                         .stream()
                         .anyMatch(s ->
-                                s.getId()
-                                        .equals(service.getId())
-                        );
+                                s.getId().equals(service.getId()));
 
         if (!supportsService) {
             throw new IllegalStateException("Nhân viên không hỗ trợ dịch vụ này");
@@ -119,51 +119,47 @@ public class AppointmentServiceImpl implements AppointmentService {
         // ================= CREATE APPOINTMENT =================
         Appointment appointment =
                 Appointment.builder()
-
-                        // USER
                         .user(user)
-
-                        // STAFF
                         .staff(staff)
-
-                        // SERVICE
                         .service(service)
-
-                        // CUSTOMER
                         .customerName(dto.customerName())
-
                         .customerPhone(dto.customerPhone())
-
                         .customerEmail(dto.customerEmail())
-
                         .note(dto.note())
-
-                        // PRICE
                         .totalPrice(service.getPrice())
-
-                        // TIME
                         .startTime(dto.startTime())
-
                         .endTime(dto.endTime())
-
-                        // STATUS
                         .status(AppointmentStatus.PENDING)
-
                         .paymentStatus(PaymentStatus.UNPAID)
-
                         .build();
 
-        var saved = appointmentRepository.save(appointment);
+        Appointment saved = appointmentRepository.save(appointment);
+
+        // ================= NOTIFY STAFF =================
+        List<User> staffs = userRepository.findAllByRole(Role.STAFF);
+
+        for (User staffUser : staffs) {
+
+            notificationService.createNotification(
+
+                    staffUser.getId(), "Lịch hẹn mới",
+                    dto.customerName()
+                            + " vừa đặt lịch "
+                            + service.getName(),
+                    NotificationType.APPOINTMENT_CREATED, "/appointmentmanager/" + saved.getId());
+        }
 
         return ResultDTO.success(mapper.toDTO(saved), "Đặt lịch thành công");
     }
 
-    // CONFIRM (STAFF / ADMIN)
+    // ================= CONFIRM =================
     @Transactional
     public ResultDTO<AppointmentResponseDTO> confirm(Long id) {
 
-        Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Appointment", id));
+        Appointment appointment =
+                appointmentRepository.findById(id)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException("Appointment", id));
 
         if (appointment.getStatus() != AppointmentStatus.PENDING) {
             throw new IllegalStateException("Chỉ có thể xác nhận lịch PENDING");
@@ -173,17 +169,20 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         appointmentRepository.save(appointment);
 
+        // ================= ASYNC EMAIL =================
         emailService.sendAppointmentConfirmedEmail(appointment);
 
         return ResultDTO.success(mapper.toDTO(appointment), "Xác nhận lịch thành công");
     }
 
-    // MARK PAID (STAFF xác nhận đã nhận tiền)
+    // ================= MARK PAID =================
     @Transactional
     public ResultDTO<AppointmentResponseDTO> markPaid(Long id) {
 
-        Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Appointment", id));
+        Appointment appointment =
+                appointmentRepository.findById(id)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException("Appointment", id));
 
         if (appointment.getStatus() != AppointmentStatus.CONFIRMED) {
             throw new IllegalStateException("Phải xác nhận trước");
@@ -195,22 +194,22 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         appointment.setPaymentStatus(PaymentStatus.PAID);
 
-        try {
-            emailService.sendAppointmentPaidEmail(appointment);
-        } catch (Exception e) {
-            // chỉ log, không làm fail business
-            System.err.println("Send mail failed: " + e.getMessage());
-        }
+        appointmentRepository.save(appointment);
+
+        // ================= ASYNC EMAIL =================
+        emailService.sendAppointmentPaidEmail(appointment);
 
         return ResultDTO.success(mapper.toDTO(appointment), "Đã xác nhận thanh toán");
     }
 
-    // COMPLETE (kết thúc dịch vụ)
+    // ================= COMPLETE =================
     @Transactional
     public ResultDTO<AppointmentResponseDTO> complete(Long id) {
 
-        Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Appointment", id));
+        Appointment appointment =
+                appointmentRepository.findById(id)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException("Appointment", id));
 
         if (appointment.getStatus() != AppointmentStatus.CONFIRMED) {
             throw new IllegalStateException("Chưa xác nhận lịch");
@@ -221,6 +220,8 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
 
         appointment.setStatus(AppointmentStatus.COMPLETED);
+
+        appointmentRepository.save(appointment);
 
         return ResultDTO.success(mapper.toDTO(appointment), "Hoàn thành dịch vụ");
     }

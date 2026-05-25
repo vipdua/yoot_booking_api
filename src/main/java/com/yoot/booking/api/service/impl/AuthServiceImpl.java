@@ -55,7 +55,7 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Sai mật khẩu!");
         }
 
-        String accessToken = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+        String accessToken = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole().name());
         String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
 
         AuthResponseDTO response = new AuthResponseDTO(accessToken, refreshToken, "Bearer");
@@ -82,13 +82,12 @@ public class AuthServiceImpl implements AuthService {
                     .orElse("USER");
         }
 
-        String newAccessToken = jwtUtil.generateToken(email, role);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
 
-        return new AuthResponseDTO(
-                newAccessToken,
-                request.refreshToken(),
-                "Bearer"
-        );
+        String newAccessToken = jwtUtil.generateToken( user.getId(), email, role );
+
+        return new AuthResponseDTO(newAccessToken, request.refreshToken(), "Bearer");
     }
 
     @Override
