@@ -8,6 +8,10 @@ public record StaffResponseDTO(
         Long id,
         String name,
         String specialization,
+        String description,
+        String avatarUrl,
+        String position,
+        Integer experienceYears,
         Boolean isActive,
         List<BookingServiceResponseDTO> services
 ) {}

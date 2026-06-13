@@ -12,15 +12,34 @@ import java.time.LocalDateTime;
 
 public interface StaffService {
 
-    ResultListDTO<StaffResponseDTO> getAll(PagingRequestDTO request, Long serviceId);
+    // ================= GET ALL =================
+    ResultListDTO<StaffResponseDTO> getAll(
+            PagingRequestDTO request,
+            Long serviceId
+    );
 
+    // ================= GET BY ID =================
     ResultDTO<StaffResponseDTO> getById(Long id);
 
-    ResultListDTO<StaffResponseDTO> getAvailable(LocalDateTime start, LocalDateTime end, PagingRequestDTO request);
+    // ================= GET AVAILABLE =================
+    ResultListDTO<StaffResponseDTO> getAvailable(
+            Long serviceId,
+            LocalDateTime start,
+            LocalDateTime end,
+            PagingRequestDTO request
+    );
 
-    ResultDTO<StaffResponseDTO> create(StaffCreateDTO dto);
+    // ================= CREATE =================
+    ResultDTO<StaffResponseDTO> create(
+            StaffCreateDTO dto
+    );
 
-    ResultDTO<StaffResponseDTO> update(Long id, StaffUpdateDTO dto);
+    // ================= UPDATE =================
+    ResultDTO<StaffResponseDTO> update(
+            Long id,
+            StaffUpdateDTO dto
+    );
 
+    // ================= DELETE =================
     ResultNoDataDTO delete(Long id);
 }

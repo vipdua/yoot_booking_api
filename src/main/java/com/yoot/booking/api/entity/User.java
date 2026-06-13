@@ -28,6 +28,17 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    private String fullName;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    private String phone;
+
+    private String avatar;
+
+    private String address;
+
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 

@@ -1,16 +1,16 @@
 package com.yoot.booking.api.dto.staff;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import java.util.List;
 
 public record StaffUpdateDTO(
-
-        // Tất cả field đều nullable để hỗ trợ partial update
         String name,
-
         String specialization,
-
+        String description,
+        String position,
+        Integer experienceYears,
         Boolean isActive,
-
-        // Nếu không null → thay thế toàn bộ danh sách service của staff
+        MultipartFile avatar,
         List<Long> serviceIds
 ) {}

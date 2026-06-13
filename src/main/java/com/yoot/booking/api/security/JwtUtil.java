@@ -2,37 +2,48 @@ package com.yoot.booking.api.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
 
 @Component
+@RequiredArgsConstructor
 public class JwtUtil {
 
-    private final String SECRET = "your-secret-key-your-secret-key-your-secret-key";
+    @Value("${jwt.secret}")
+    private String secret;
 
-    private final long EXPIRATION = 1000 * 60 * 60 * 24; // 1 ngày
+    @Value("${jwt.access-expiration}")
+    private long accessExpiration;
+
+    @Value("${jwt.refresh-expiration}")
+    private long refreshExpiration;
 
     private Key getSignKey() {
-        return Keys.hmacShaKeyFor(SECRET.getBytes());
+        return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    public String generateToken(String email, String role) {
+    // ================= ACCESS TOKEN =================
+    public String generateToken(Long userId, String email, String role) {
         return Jwts.builder()
                 .setSubject(email)
                 .claim("role", role)
+                .claim("id", userId)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION))
+                .setExpiration(new Date(System.currentTimeMillis() + accessExpiration))
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
+    // ================= REFRESH TOKEN =================
     public String generateRefreshToken(String email) {
         return Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000)) // 7 ngày
+                .setExpiration(new Date(System.currentTimeMillis() + refreshExpiration))
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -61,4 +72,4 @@ public class JwtUtil {
                 .parseClaimsJws(token)
                 .getBody();
     }
-}
+}

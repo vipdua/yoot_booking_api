@@ -16,39 +16,70 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    // ================= NOT FOUND =================
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ResultDTO<?>> handleNotFound(ResourceNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
                 .body(ResultDTO.fail(ex.getMessage()));
     }
 
+    // ================= VALIDATION =================
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ResultDTO<?>> handleValidation(MethodArgumentNotValidException ex) {
 
         Map<String, String> errors = new LinkedHashMap<>();
-        ex.getBindingResult().getFieldErrors()
-                .forEach(e -> errors.put(e.getField(), e.getDefaultMessage()));
 
-        return ResponseEntity.status(422)
-                .body(ResultDTO.fail("Validation failed: " + errors));
+        ex.getBindingResult()
+                .getFieldErrors()
+                .forEach(e ->
+                        errors.put(e.getField(), e.getDefaultMessage()));
+
+        return ResponseEntity.status(422).body(ResultDTO.fail("Validation failed: " + errors));
     }
 
+    // ================= CONSTRAINT =================
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ResultDTO<?>> handleConstraint(ConstraintViolationException ex) {
 
         Map<String, String> errors = new LinkedHashMap<>();
-        ex.getConstraintViolations()
-                .forEach(cv -> errors.put(cv.getPropertyPath().toString(), cv.getMessage()));
 
-        return ResponseEntity.status(422)
-                .body(ResultDTO.fail("Validation failed: " + errors));
+        ex.getConstraintViolations()
+                .forEach(cv ->
+                        errors.put(cv.getPropertyPath().toString(), cv.getMessage()));
+
+        return ResponseEntity.status(422).body(ResultDTO.fail("Validation failed: " + errors));
     }
 
+    // ================= ILLEGAL STATE =================
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ResultDTO<?>> handleIllegalState(IllegalStateException ex) {
+
+        log.error("[IllegalStateException]", ex);
+
+        return ResponseEntity
+                .badRequest()
+                .body(ResultDTO.fail(ex.getMessage()));
+    }
+
+    // ================= ILLEGAL ARGUMENT =================
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ResultDTO<?>> handleIllegalArgument(IllegalArgumentException ex) {
+
+        log.error("[IllegalArgumentException]", ex);
+
+        return ResponseEntity.badRequest().body(ResultDTO.fail(ex.getMessage()));
+    }
+
+    // ================= GENERIC =================
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ResultDTO<?>> handleGeneric(Exception ex) {
+
         log.error("[Unhandled exception]", ex);
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ResultDTO.fail("Internal server error"));
     }
 }
