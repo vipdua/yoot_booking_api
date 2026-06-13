@@ -25,4 +25,6 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     Page<Appointment> findAllByStaffId(Long staffId, Pageable pageable);
 
     boolean existsByServiceId(Long serviceId);
+
+    List<Appointment> findByStaffIdAndStatusInAndStartTimeLessThanAndEndTimeGreaterThan( Long staffId, List<AppointmentStatus> statuses, LocalDateTime endTime, LocalDateTime startTime );
 }
